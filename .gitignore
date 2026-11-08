@@ -1,0 +1,12 @@
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Scratch
+*.tmp

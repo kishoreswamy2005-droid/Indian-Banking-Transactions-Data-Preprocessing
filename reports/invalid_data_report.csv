@@ -1,0 +1,11 @@
+Issue,Count
+Zero or Negative Transaction Amount,0
+Missing Transaction Amount,0
+Invalid Credit Score,0
+Invalid Loan Indicator,0
+Invalid Fraud Indicator,0
+Invalid Transaction Hour,0
+Invalid Transaction Date,0
+Invalid Transaction Status,0
+Loan Type Present Without Loan,0
+Loan Type Missing For Loan,19422

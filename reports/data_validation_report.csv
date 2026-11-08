@@ -1,0 +1,12 @@
+Validation_Check,Issue_Count,Status
+Transaction ID Uniqueness,0,PASS
+Exact Duplicate Records,0,PASS
+Missing Transaction Amounts,0,PASS
+Non-Positive Transaction Amounts,0,PASS
+Invalid Transaction Dates,0,PASS
+Invalid Transaction Times,0,PASS
+Invalid Transaction Statuses,0,PASS
+Invalid Credit Scores,0,PASS
+Invalid Loan Indicators,0,PASS
+Invalid Fraud Indicators,0,PASS
+Invalid Transaction Hours,0,PASS

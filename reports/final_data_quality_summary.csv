@@ -1,0 +1,9 @@
+Metric,Value
+Original Row Count,550000
+Cleaned Row Count,550000
+Original Column Count,20
+Exact Duplicates Removed,0
+Remaining Exact Duplicates,0
+Missing Values After Processing,377134
+Transaction ID Duplicate Count,0
+Statistical Outlier Count,88976

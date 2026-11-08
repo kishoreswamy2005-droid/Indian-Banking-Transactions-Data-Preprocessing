@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indian Banking Transactions — Analyst Dashboard</title>
+<script>{{CHARTJS}}</script>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#ffffff; --ink:#17233b; --muted:#64748b;
+  --accent:#1e3a8a; --accent2:#0d9488; --warn:#dc2626; --gold:#b45309;
+  --line:#e2e8f0; --radius:14px; --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(120deg,#0f172a 0%,#1e3a8a 70%,#0d9488 130%);color:#fff;padding:22px clamp(16px,4vw,40px) 18px}
+header h1{margin:0;font-size:clamp(1.2rem,2.6vw,1.7rem);font-weight:700;letter-spacing:.2px}
+header p{margin:5px 0 0;color:#c7d7f0;font-size:.86rem}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.badge{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:99px;padding:3px 12px;font-size:.75rem;color:#e6efff}
+nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1400px;margin:0 auto;padding:10px clamp(14px,3vw,32px);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:6px 14px;border-radius:99px;font-size:.84rem;font-weight:600;color:#334155;text-decoration:none;background:#eef2f8;border:1px solid var(--line)}
+.tab:hover{background:#e2e9f4}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.filters{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filters select{font-size:.82rem;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);max-width:150px}
+.filters .clear{font-size:.8rem;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;color:#64748b}
+.filters .clear:hover{border-color:#cbd5e1;color:#334155}
+main{max-width:1400px;margin:0 auto;padding:18px clamp(14px,3vw,32px) 60px}
+section{margin-top:26px;scroll-margin-top:64px}
+.sec-title{display:flex;align-items:baseline;gap:10px;margin:0 0 14px}
+.sec-title h2{font-size:1.06rem;margin:0}
+.sec-title span{color:var(--muted);font-size:.8rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .lab{font-size:.74rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi .val{font-size:clamp(1.15rem,2.2vw,1.45rem);font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:.75rem;color:var(--muted);margin-top:3px}
+.kpi.fraud .val{color:var(--warn)} .kpi.pos .val{color:var(--accent2)} .kpi.blue .val{color:var(--accent)}
+.grid{display:grid;gap:14px;margin-top:14px}
+.grid.cols2{grid-template-columns:repeat(auto-fit,minmax(min(430px,100%),1fr))}
+.grid.cols3{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.card h3{margin:0 0 2px;font-size:.92rem;font-weight:600}
+.card .hint{font-size:.75rem;color:var(--muted);margin-bottom:8px}
+.chartbox{position:relative;height:300px}
+.chartbox.tall{height:340px}
+.caveat{display:inline-block;font-size:.68rem;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.btn-mini{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:600}
+.ok{background:#dcfce7;color:#166534}.warn-b{background:#fee2e2;color:#991b1b}.mid{background:#fef3c7;color:#92400e}
+.tblwrap{overflow:auto;max-height:420px}
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px;margin-top:14px}
+.insight{background:linear-gradient(135deg,#eef4ff, #f6fbff);border:1px solid #dbe7ff;border-radius:var(--radius);padding:13px 15px;font-size:.86rem}
+.insight b{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.4px;color:var(--accent);margin-bottom:5px}
+.score{display:flex;gap:10px;align-items:center}
+.score .big{font-size:2rem;font-weight:800}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{font-size:.75rem;background:#eef2f8;border:1px solid var(--line);padding:4px 11px;border-radius:99px;color:#334155}
+footer{max-width:1400px;margin:0 auto;padding:0 clamp(14px,3vw,32px) 40px;color:var(--muted);font-size:.78rem}
+.metric-toggle{display:flex;gap:6px;margin-bottom:8px}
+.metric-toggle button{border:1px solid var(--line);background:#fff;border-radius:8px;font-size:.78rem;padding:4px 12px;cursor:pointer;color:#475569}
+.metric-toggle button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+@media(max-width:640px){.filters{margin-left:0;width:100%}.chartbox{height:250px}.chartbox.tall{height:280px}}
+
+/* ---------- dark / night mode ---------- */
+body{transition:background-color .3s ease,color .3s ease}
+body.dark{
+  --bg:#0b1220; --card:#111a2e; --ink:#e2e8f0; --muted:#8ea0b8;
+  --accent:#4f77c7; --accent2:#2dd4bf; --warn:#f87171; --gold:#fbbf24;
+  --line:#243147; --shadow:0 1px 2px rgba(0,0,0,.45),0 4px 16px rgba(0,0,0,.35);
+}
+body.dark nav{background:rgba(11,18,32,.94)}
+body.dark .tab{background:#18243c;color:#cbd5e1;border-color:var(--line)}
+body.dark .tab:hover{background:#1f2e4d}
+body.dark .filters select{background:var(--card);color:var(--ink)}
+body.dark .filters .clear{background:var(--card);color:var(--muted)}
+body.dark .filters .clear:hover{border-color:#3a4d6e;color:var(--ink)}
+body.dark td{border-bottom-color:#182338}
+body.dark .caveat{background:#33260e;color:#fbbf24;border-color:#6b5316}
+body.dark .btn-mini.ok{background:#07301d;color:#4ade80}
+body.dark .btn-mini.warn-b{background:#3a0f0f;color:#fca5a5}
+body.dark .btn-mini.mid{background:#33260e;color:#fbbf24}
+body.dark .insight{background:linear-gradient(135deg,#16213c,#121a30);border-color:#25324e}
+body.dark .insight b{color:#7fa5e8}
+body.dark .pill{background:#18243c;color:#cbd5e1;border-color:var(--line)}
+body.dark .metric-toggle button{background:var(--card);color:var(--muted)}
+body.dark .metric-toggle button.on{background:var(--accent);color:#fff}
+.bar-track{background:#eef2f8;border-radius:5px;height:4px;margin-top:2px}
+.bar-fill{height:4px;border-radius:5px;background:var(--accent2)}
+body.dark .bar-track{background:#1c2a45}
+#themeBtn{min-width:88px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Indian Banking Transactions — Analyst Dashboard</h1>
+  <p id="hdrSub">Interactive exploration of 550,000 transactions &middot; 2019-01 &rarr; {{MAXM}}</p>
+  <div class="badges">
+    <span class="badge" id="bPrecision"></span>
+    <span class="badge" id="bCustomers"></span>
+    <span class="badge" id="bTypes"></span>
+    <span class="badge" id="bStates"></span>
+    <span class="badge">Fraud rate {{FRAUDPCT}}%</span>
+  </div>
+</header>
+
+<nav><div class="nav-in">
+  <div class="tabs">
+    <a class="tab" href="#overview">Overview</a>
+    <a class="tab" href="#fraud">Fraud</a>
+    <a class="tab" href="#quality">Data Quality</a>
+    <a class="tab" href="#customers">Top Customers</a>
+  </div>
+  <div class="filters" id="filterBar">
+    <select id="fM0" title="Period from"></select>
+    <select id="fM1" title="Period to"></select>
+    <select id="fType"><option value="">Type: all</option></select>
+    <select id="fState"><option value="">State: all</option></select>
+    <select id="fCat"><option value="">Category: all</option></select>
+    <select id="fChan"><option value="">Channel: all</option></select>
+    <select id="fStatus"><option value="">Status: all</option></select>
+    <select id="fFraud"><option value="">Fraud: all</option><option value="1">FRAUD only</option><option value="0">Non-fraud only</option></select>
+    <button class="clear theme-btn" id="themeBtn" title="Toggle dark / night mode">&#127769; Dark</button>
+    <button class="clear" id="clearBtn" title="Reset all filters">&#8634; Reset</button>
+  </div>
+</div></nav>
+
+<main>
+<section id="overview">
+  <div class="sec-title"><h2>KPI snapshot</h2><span id="filterSummary">all periods &middot; all values</span></div>
+  <div class="kpis">
+    <div class="kpi blue"><div class="lab">Total transaction volume</div><div class="val" id="kVol">&#8212;</div><div class="sub" id="kVolSub">&nbsp;</div></div>
+    <div class="kpi"><div class="lab">Transactions</div><div class="val" id="kCount">&#8212;</div><div class="sub" id="kCountSub">&nbsp;</div></div>
+    <div class="kpi pos"><div class="lab">Average amount</div><div class="val" id="kAvg">&#8212;</div><div class="sub" id="kAvgSub">&nbsp;</div></div>
+    <div class="kpi fraud"><div class="lab">Fraud share</div><div class="val" id="kFraud">&#8212;</div><div class="sub" id="kFraudSub">&nbsp;</div></div>
+    <div class="kpi"><div class="lab">Success rate</div><div class="val" id="kSucc">&#8212;</div><div class="sub" id="kSuccSub">status-channel dataset</div></div>
+    <div class="kpi"><div class="lab">Active customers / month</div><div class="val" id="kCust">&#8212;</div><div class="sub">monthly distinct average</div></div>
+  </div>
+
+  <div class="grid cols2" style="margin-top:14px">
+    <div class="card">
+      <h3>Monthly trend</h3><div class="hint">Volume (line) and transaction count (bars), filtered period</div>
+      <div class="metric-toggle"><button id="mtVol" class="on">&#8377; volume</button><button id="mtCount">count</button></div>
+      <div class="chartbox tall"><canvas id="cTrend"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Transaction type share</h3><div class="hint">Volume by payment method (filtered)</div>
+      <div class="chartbox"><canvas id="cType"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid cols2">
+    <div class="card">
+      <h3>Top merchant categories</h3><div class="hint">Volume by category (filtered)</div>
+      <div class="chartbox"><canvas id="cCat"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>State performance</h3><div class="hint">Volume by state (filtered) &middot; hover for counts &amp; fraud</div>
+      <div class="chartbox"><canvas id="cState"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid cols3">
+    <div class="card">
+      <h3>Channel mix</h3><div class="hint">Transactions by channel <span class="caveat" id="cvChan">time+type scope</span></div>
+      <div class="chartbox"><canvas id="cChan"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Transaction status</h3><div class="hint">Share by status <span class="caveat" id="cvStat">time+type scope</span></div>
+      <div class="chartbox"><canvas id="cStatus"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Debit vs Credit</h3><div class="hint">Overall direction split</div>
+      <div class="chartbox"><canvas id="cDir"></canvas></div>
+    </div>
+  </div>
+
+  <div class="insights" id="insights"></div>
+</section>
+
+<section id="fraud">
+  <div class="sec-title"><h2>Fraud analytics</h2><span>0.89% of flagged transactions &middot; 4&times; higher average amount than genuine</span></div>
+  <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div class="kpi fraud"><div class="lab">Flagged transactions</div><div class="val" id="kFN">&#8212;</div><div class="sub">within filters</div></div>
+    <div class="kpi fraud"><div class="lab">Avg fraud amount</div><div class="val" id="kFA">&nbsp;</div><div class="sub">vs genuine (right card)</div></div>
+    <div class="kpi"><div class="lab">Avg genuine amount</div><div class="val" id="kFG">&nbsp;</div><div class="sub">within filters</div></div>
+    <div class="kpi"><div class="lab">Fraud velocity</div><div class="val" id="kFV">&nbsp;</div><div class="sub">estimated fraud volume share</div></div>
+  </div>
+  <div class="grid cols2">
+    <div class="card">
+      <h3>Fraud rate by hour</h3><div class="hint">Line = % of transactions flagged &middot; bars = hourly volume <span class="caveat">time scope only</span></div>
+      <div class="chartbox"><canvas id="cHour"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Fraud &amp; total volume per month</h3><div class="hint">Bars = total transactions, line = flagged count</div>
+      <div class="chartbox"><canvas id="cFraudTrend"></canvas></div>
+    </div>
+  </div>
+  <div class="grid cols2">
+    <div class="card">
+      <h3>Fraud by transaction type</h3><div class="hint">Flagged volume (&#8377;) per method (filtered)</div>
+      <div class="chartbox"><canvas id="cFraudType"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Fraud hotspots</h3><div class="hint">Flagged volume by state (filtered) &middot; hover for transaction counts</div>
+      <div class="chartbox"><canvas id="cFraudState"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<section id="quality">
+  <div class="sec-title"><h2>Data quality &amp; validation</h2><span>checks mirroring the preprocessing notebook</span></div>
+  <div class="grid cols2">
+    <div class="card">
+      <h3>Validation checks</h3><div class="hint">run on the 550,000-row raw file</div>
+      <table><thead><tr><th>Check</th><th style="text-align:right">Value</th><th style="text-align:right">Verdict</th></tr></thead><tbody id="qChecks"></tbody></table>
+    </div>
+    <div class="card">
+      <h3>Missing values by column</h3><div class="hint">raw counts across the 20 source columns</div>
+      <table><thead><tr><th>Column</th><th style="text-align:right">Missing</th><th style="text-align:right">%</th></tr></thead><tbody id="qMissing"></tbody></table>
+      <div class="pill-row"><span class="pill">loan_type blanks are structural: 65% of transactions have no loan</span><span class="pill">19.4K borrowers still missing loan_type &rarr; impute or verify</span></div>
+    </div>
+  </div>
+  <div class="grid cols2">
+    <div class="card">
+      <h3>KYC status mix</h3><div class="hint">44,288 Pending &middot; 22,255 Expired verified accounts</div>
+      <div class="chartbox" style="height:260px"><canvas id="cKyc"></canvas></div>
+      <div class="pill-row"><span class="pill">Pending = eligibility risk for new credit lines</span><span class="pill">Expired = re-verification drive candidate</span></div>
+    </div>
+    <div class="card">
+      <h3>Distribution &amp; outlier notes</h3>
+      <table><tbody>
+        <tr><td>Amount median</td><td><b>&#8377;2,036</b> &nbsp;vs&nbsp; <b>&#8377;29,907</b> mean</td></tr>
+        <tr><td>Heavy right tail</td><td>IQR outlier rule flags <b>{{OUTLIERS}}</b> rows ({{OUTPCT}}%) &mdash; amounts span to &#8377;{{AMTMAX}}, so tail is structural, not erroneous</td></tr>
+        <tr><td>Credit score</td><td>~uniform 300&ndash;899 (mean &asymp; 600, std &asymp; 173) &mdash; treat score-based segments with caution</td></tr>
+        <tr><td>Loan coverage</td><td>&asymp; 35% of transactions carry <b>has_loan=1</b>; loan_type present only there</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</section>
+
+<section id="customers">
+  <div class="sec-title"><h2>Top 20 customers</h2><span>static ranking by lifetime volume &mdash; reference, unaffected by filters</span></div>
+  <div class="card">
+    <table><thead><tr>
+      <th>#</th><th>Customer</th><th>State</th><th style="text-align:right">Txns</th><th style="text-align:right">Volume</th><th style="text-align:right">Share</th><th style="text-align:right">Credit score</th><th>Loan</th><th>Fraud</th>
+    </tr></thead><tbody id="tbCustomers"></tbody></table>
+  </div>
+</section>
+
+</main>
+<footer>
+  Built for exploratory analytics: filters recompute all KPI charts client-side from pre-aggregated fact tables (2.46&nbsp;MB embedding of a 550K-row CSV). Amounts nominal INR. Dataset: indian_banking_transactions.csv.
+</footer>
+
+<script id="DATA" type="application/json">{{DATA}}</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("DATA").textContent);
+const M = D.months, DIM = D.dims, T = D.totals;
+let ch = {}, filters = { m0: 0, m1: M.length - 1, type: "", state: "", cat: "", chan: "", status: "", fraud: "" };
+let metric = "volume";
+
+/* ---------- dark / night mode ---------- */
+const $id = id => document.getElementById(id);
+const isDark = () => document.body.classList.contains("dark");
+const chartBorder = () => isDark() ? "#111a2e" : "#fff";   // doughnut/pie slice borders
+(function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem("dashTheme"); } catch (e) {}
+  const dark = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.body.classList.toggle("dark", dark);
+  $id("themeBtn").textContent = dark ? "\u2600\ufe0f Light" : "\ud83c\udf19 Dark";
+  Chart.defaults.color = dark ? "#cbd5e1" : "#475569";
+})();
+
+/* ---------- helpers ---------- */
+const fmtN = n => n >= 1e9 ? "\u20B9" + (n / 1e9).toFixed(2) + "B" : n >= 1e6 ? "\u20B9" + (n / 1e6).toFixed(2) + "M" : n >= 1e3 ? "\u20B9" + (n / 1e3).toFixed(1) + "K" : "\u20B9" + n.toFixed(0);
+const fmtNum = n => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(n);
+const pct = v => (v * 100).toFixed(2) + "%";
+const PALETTE = ["#1e3a8a","#0d9488","#4f77c7","#b45309","#7c3aed","#dc2626","#059669","#0891b2","#a16207","#be185d","#4b5563","#65a30d"];
+Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.borderColor = "rgba(128,145,170,.25)";
+
+function mk(cid, cfg) { if (ch[cid]) { ch[cid].destroy(); } ch[cid] = new Chart(document.getElementById(cid), cfg); return ch[cid]; }
+
+/* ---------- fact aggregation ---------- */
+function aggA() {
+  const hasType = !!filters.type, hasState = !!filters.state, hasCat = !!filters.cat;
+  const f = filters.fraud; // "" | "0" | "1"
+  const res = { count: 0, vol: 0, fCount: 0, fVol: 0, nCount: 0, nVol: 0,
+                byType: new Array(DIM.types.length).fill(0), byTypeF: new Array(DIM.types.length).fill(0),
+                byState: new Array(DIM.states.length).fill(0), byStateC: new Array(DIM.states.length).fill(0), byStateF: new Array(DIM.states.length).fill(0),
+                byCat: new Array(DIM.cats.length).fill(0),
+                mCount: new Array(M.length).fill(0), mVol: new Array(M.length).fill(0), mF: new Array(M.length).fill(0) };
+  const m0 = filters.m0, m1 = filters.m1;
+  for (const r of D.A) {
+    if (r[0] < m0 || r[0] > m1) continue;
+    if (f !== "" && r[4] !== +f) continue;
+    if (hasType && DIM.types[r[1]] !== filters.type) continue;
+    if (hasState && DIM.states[r[2]] !== filters.state) continue;
+    if (hasCat && DIM.cats[r[3]] !== filters.cat) continue;
+    const [c, v] = [r[5], r[6]];
+    res.count += c; res.vol += v; res.mCount[r[0]] += c; res.mVol[r[0]] += v;
+    res.byType[r[1]] += v; res.byCat[r[3]] += v; res.byState[r[2]] += v; res.byStateC[r[2]] += c;
+    if (r[4]) { res.fCount += c; res.fVol += v; res.mF[r[0]] += c; res.byTypeF[r[1]] += v; res.byStateF[r[2]] += v; }
+    else { res.nCount += c; res.nVol += v; }
+  }
+  return res;
+}
+function aggB() {
+  const res = { count: 0, vol: 0, byStatus: new Array(DIM.statuses.length).fill(0), byStatusC: new Array(DIM.statuses.length).fill(0), byChan: new Array(DIM.channels.length).fill(0) };
+  const m0 = filters.m0, m1 = filters.m1, f = filters.fraud;
+  for (const r of D.B) {
+    if (r[0] < m0 || r[0] > m1) continue;
+    if (f !== "" && r[4] !== +f) continue;
+    if (filters.status && DIM.statuses[r[1]] !== filters.status) continue;
+    if (filters.chan && DIM.channels[r[2]] !== filters.chan) continue;
+    if (filters.type && DIM.types[r[3]] !== filters.type) continue;
+    res.count += r[5]; res.byStatus[r[1]] += r[5]; res.byStatusC[r[1]] += r[5]; res.byChan[r[2]] += r[5];
+  }
+  return res;
+}
+function aggHour() {
+  const rate = new Array(24).fill(0), cntF = new Array(24).fill(0), cnt = new Array(24).fill(0);
+  const m0 = filters.m0, m1 = filters.m1;
+  for (const r of D.H) {
+    if (r[0] < m0 || r[0] > m1) continue;
+    if (r[2]) { cntF[r[1]] += r[3]; cnt[r[1]] += r[3]; } else cnt[r[1]] += r[3];
+  }
+  for (let h = 0; h < 24; h++) rate[h] = cnt[h] ? cntF[h] / cnt[h] * 100 : 0;
+  return { rate, cntF, cnt };
+}
+
+/* ---------- render ---------- */
+function render() {
+  Chart.defaults.color = isDark() ? "#cbd5e1" : "#475569";
+  const A = aggA(), B = aggB(), HR = aggHour();
+  const primaryA = filters.state || filters.cat || true; // A covers type/state/cat/time
+  const useB = (!!filters.chan || !!filters.status) && !filters.state && !filters.cat;
+  const src = useB ? { count: B.count, vol: 0 } : { count: A.count, vol: A.vol };
+
+  // KPIs
+  const kVol = document.getElementById("kVol");
+  if (useB) { kVol.textContent = fmtNum(B.count); kVol.nextSibling.textContent = "count only (channel/status scope)"; }
+  else { kVol.textContent = fmtN(A.vol); document.getElementById("kVolSub").textContent = filters.type || filters.state || filters.cat ? "within filters" : "all 550K transactions approx"; }
+  document.getElementById("kCount").textContent = fmtNum(src.count);
+  document.getElementById("kCountSub").textContent = "in selected period (" + M[filters.m0] + " \u2192 " + M[filters.m1] + ")";
+  document.getElementById("kAvg").textContent = A.count ? "\u20B9" + Math.round(A.vol / A.count).toLocaleString() : "\u2014";
+  document.getElementById("kAvgSub").textContent = "median \u2248 \u20B92,036 (global)";
+  const fr = A.count ? A.fCount / A.count * 100 : 0;
+  document.getElementById("kFraud").textContent = fr.toFixed(2) + "%";
+  document.getElementById("kFraudSub").textContent = A.fCount ? fmtNum(A.fCount) + " flagged rows" : "no rows in scope";
+  // success rate: needs B derived with month+status-agnostic; recomputed from statusByMonth
+  let sTotal = 0, sOK = 0; const stM = D.statusByMonth;
+  for (let i = filters.m0; i <= filters.m1; i++) { const s = stM[i] || {}; for (const k in s) { sTotal += s[k]; if (k === "Success") sOK += s[k]; } }
+  document.getElementById("kSucc").textContent = sTotal ? (sOK / sTotal * 100).toFixed(2) + "%" : "\u2014";
+  const cm = D.custMonthly.slice(filters.m0, filters.m1 + 1);
+  document.getElementById("kCust").textContent = fmtNum(cm.reduce((a, b) => a + b, 0) / Math.max(cm.length, 1));
+
+  // Trend
+  const mm = M.slice(filters.m0, filters.m1 + 1);
+  mk("cTrend", {
+    type: "bar",
+    data: { labels: mm, datasets: [
+      { type: "bar", label: "Transactions", data: A.mCount.slice(filters.m0, filters.m1 + 1), backgroundColor: "rgba(13,148,136,.55)", yAxisID: "y2", borderRadius: 3 },
+      { type: "line", label: "Volume", data: metric === "volume" ? A.mVol.slice(filters.m0, filters.m1 + 1) : A.mCount.slice(filters.m0, filters.m1 + 1),
+        borderColor: "#1e3a8a", backgroundColor: "rgba(30,58,138,.12)", fill: true, tension: .32, pointRadius: 2, yAxisID: "y", borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => c.dataset.label === "Volume" ? fmtN(c.parsed.y) : fmtNum(c.parsed.y) } } },
+      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10, maxRotation: 60 } },
+        y: { position: "left", title: { text: metric === "volume" ? "Volume (\u20B9)" : "Transactions (line)", display: true }, ticks: { callback: v => metric === "volume" ? fmtN(v) : fmtNum(v) }, beginAtZero: true },
+        y2: { position: "right", title: { display: true, text: "Transactions" }, grid: { display: false }, beginAtZero: true } } }
+  });
+
+  // Type doughnut
+  mk("cType", { type: "doughnut",
+    data: { labels: DIM.types, datasets: [{ data: A.byType, backgroundColor: PALETTE, borderWidth: 1, borderColor: chartBorder() }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "58%", plugins: { legend: { position: "right", labels: { font: { size: 10 } } },
+      tooltip: { callbacks: { label: c => c.label + ": " + fmtN(c.parsed) + " (" + pct(c.parsed / A.vol) + ")" } } } } });
+
+  // Category bar
+  const catPairs = DIM.cats.map((c, i) => [c, A.byCat[i]]).filter(p => p[1] > 0).sort((a, b) => b[1] - a[1]);
+  mk("cCat", { type: "bar",
+    data: { labels: catPairs.map(p => p[0]), datasets: [{ data: catPairs.map(p => p[1]), backgroundColor: "#1e3a8a", borderRadius: 5 }] },
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtN(c.parsed.x) } } },
+      scales: { x: { ticks: { callback: v => fmtN(v) } }, y: { grid: { display: false } } } } });
+
+  // State bar
+  const statePairs = DIM.states.map((s, i) => [s, A.byState[i]]).sort((a, b) => b[1] - a[1]);
+  mk("cState", { type: "bar",
+    data: { labels: statePairs.map(p => p[0]), datasets: [{ data: statePairs.map(p => p[1]),
+      backgroundColor: statePairs.map((_, i) => i < 3 ? "#0d9488" : i < 7 ? "#4f77c7" : "#a9c0e8"), borderRadius: 5 }] },
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => { const idx = DIM.states.indexOf(c.label); return fmtN(c.parsed.x) + " \u00b7 " + fmtNum(A.byStateC[idx]) + " txns \u00b7 " + fmtNum(A.byStateF[idx]) + " fraud"; } } } },
+      scales: { x: { ticks: { callback: v => fmtN(v) } }, y: { grid: { display: false } } } } });
+
+  mk("cChan", { type: "bar",
+    data: { labels: DIM.channels, datasets: [{ data: B.byChan, backgroundColor: "#0891b2", borderRadius: 5 }] },
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtNum(c.parsed.x) + " txns" } } },
+      scales: { x: { ticks: { callback: v => fmtNum(v) } }, y: { grid: { display: false } } } } });
+
+  mk("cStatus", { type: "pie",
+    data: { labels: DIM.statuses, datasets: [{ data: B.byStatus, backgroundColor: ["#059669", "#dc2626", "#d97706", "#6b7280"], borderWidth: 1, borderColor: chartBorder() }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { font: { size: 10 } } },
+      tooltip: { callbacks: { label: c => c.label + ": " + fmtNum(c.parsed) + " (" + pct(c.parsed / B.count) + ")" } } } } });
+
+  const dv = D.dirVol;
+  mk("cDir", { type: "doughnut",
+    data: { labels: ["Debit", "Credit"], datasets: [{ data: [dv.Debit ?? 0, dv.Credit ?? 0], backgroundColor: ["#1e3a8a", "#0d9488"], borderWidth: 1, borderColor: chartBorder() }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "52%", plugins: { legend: { position: "bottom" },
+      tooltip: { callbacks: { label: c => c.label + ": " + fmtN(dv[c.label] ?? 0) + " (" + pct((dv[c.label] ?? 0) / D.totalVolume) + ")" } } } } });
+
+  // Fraud KPIs
+  document.getElementById("kFN").textContent = fmtNum(A.fCount);
+  document.getElementById("kFA").textContent = A.fCount ? "\u20B9" + Math.round(A.fVol / A.fCount).toLocaleString() : "\u2014";
+  document.getElementById("kFG").textContent = A.nCount ? "\u20B9" + Math.round(A.nVol / A.nCount).toLocaleString() : "\u2014";
+  document.getElementById("kFV").textContent = A.nVol ? pct(A.fVol / (A.fVol + A.nVol)) : "0%";
+
+  mk("cHour", {
+    data: { labels: [...Array(24).keys()].map(h => String(h).padStart(2, "0") + ":00"), datasets: [
+      { type: "bar", label: "Txns", data: HR.cnt, backgroundColor: "rgba(79,119,199,.5)", yAxisID: "y2", borderRadius: 2 },
+      { type: "line", label: "Fraud %", data: HR.rate, borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,.12)", fill: true, tension: .3, pointRadius: 2, yAxisID: "y", borderWidth: 2 }] },
+    type: "bar",
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => c.dataset.label === "Fraud %" ? c.parsed.y.toFixed(3) + "% (" + fmtNum(HR.cntF[c.dataIndex]) + " flagged)" : fmtNum(c.parsed.y) } } },
+      scales: { y: { position: "left", title: { display: true, text: "Fraud %" }, ticks: { callback: v => v + "%" }, beginAtZero: true },
+        y2: { position: "right", grid: { display: false }, title: { display: true, text: "Transactions" }, beginAtZero: true },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 24 } } } } });
+
+  const mFA = A.mF.slice(filters.m0, filters.m1 + 1), mCN = A.mCount.slice(filters.m0, filters.m1 + 1);
+  mk("cFraudTrend", { type: "bar",
+    data: { labels: mm, datasets: [
+      { type: "line", label: "Flagged", data: mFA, borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,.15)", fill: true, tension: .3, pointRadius: 2, yAxisID: "y", borderWidth: 2 },
+      { type: "bar", label: "All txns", data: mCN, backgroundColor: "rgba(30,58,138,.45)", yAxisID: "y2", borderRadius: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ": " + fmtNum(c.parsed.y) } } },
+      scales: { y: { position: "left", title: { display: true, text: "Flagged" }, beginAtZero: true },
+        y2: { position: "right", grid: { display: false }, title: { display: true, text: "All" }, beginAtZero: true },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10, maxRotation: 60 } } } } });
+
+  mk("cFraudType", { type: "bar",
+    data: { labels: DIM.types, datasets: [{ data: A.byTypeF, backgroundColor: "#dc2626", borderRadius: 5 }] },
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtN(c.parsed.x) + " fraud volume" } } },
+      scales: { x: { ticks: { callback: v => fmtN(v) } }, y: { grid: { display: false } } } } });
+
+  const sfPairs = DIM.states.map((s, i) => [s, A.byStateF[i], A.byStateC[i]]).sort((a, b) => b[1] - a[1]);
+  mk("cFraudState", { type: "bar",
+    data: { labels: sfPairs.map(p => p[0]), datasets: [{ data: sfPairs.map(p => p[1]), backgroundColor: "#b45309", borderRadius: 5 }] },
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtNum(c.parsed.x) + " of " + fmtNum(sfPairs[c.dataIndex][2]) + " txns" } } },
+      scales: { x: { ticks: { callback: v => fmtNum(v) } }, y: { grid: { display: false } } } } });
+
+  // insights
+  const ins = [];
+  let bi = filters.m0; for (let i = filters.m0; i <= filters.m1; i++) if (A.mVol[i] > A.mVol[bi]) bi = i;
+  if (A.mVol[bi] > 0) ins.push(`<div class="insight"><b>Busiest month in range</b>${M[bi]} with ${fmtN(A.mVol[bi])} volume (${fmtNum(A.mCount[bi])} transactions).</div>`);
+  const tc = catPairs[0]; if (tc) ins.push(`<div class="insight"><b>Leading category</b>${tc[0]} &mdash; ${pct(tc[1] / Math.max(A.vol, 1))} of filtered volume.</div>`);
+  if (A.fCount && (A.fVol / A.fCount) > (A.nVol / A.nCount)) ins.push(`<div class="insight"><b>Fraud pattern</b>Flagged rows average <b>${(A.fVol / A.fCount / (A.nVol / A.nCount)).toFixed(1)}&times;</b> the genuine amount (${fmtN(A.fVol / A.fCount)} vs ${fmtN(A.nVol / A.nCount)}) &mdash; watch high-value channels.</div>`);
+  const topCh = DIM.channels.map((c2, i) => [c2, B.byChan[i]]).sort((a, b) => b[1] - a[1])[0];
+  if (topCh) ins.push(`<div class="insight"><b>Dominant channel</b>${topCh[0]} carries ${fmtNum(topCh[1])} transactions within selection scope.</div>`);
+  document.getElementById("insights").innerHTML = ins.join("");
+
+  // summary text
+  const fparts = [];
+  fparts.push(M[filters.m0] + " \u2192 " + M[filters.m1]);
+  if (filters.type) fparts.push(filters.type);
+  if (filters.state) fparts.push(filters.state);
+  if (filters.cat) fparts.push(filters.cat);
+  if (filters.chan) fparts.push(filters.chan);
+  if (filters.status) fparts.push(filters.status);
+  if (filters.fraud === "1") fparts.push("fraud");
+  if (filters.fraud === "0") fparts.push("non-fraud");
+  document.getElementById("filterSummary").textContent = fparts.join(" \u00b7 ");
+  document.querySelectorAll(".caveat").forEach(e => e.style.display = "none");
+  if (filters.chan || filters.status) { document.getElementById("cvChan").style.display = ""; document.getElementById("cvStat").style.display = ""; }
+}
+</script>
+
+<script>
+/* ---------- filter wiring ---------- */
+const $ = id => document.getElementById(id);
+(function initFilters() {
+  for (let i = 0; i < M.length; i++) $("fM0").add(new Option(M[i], i)); $("fM0").value = 0;
+  for (let i = M.length - 1; i >= 0; i--) $("fM1").add(new Option(M[i], i)); $("fM1").value = M.length - 1;
+  D.dims.types.forEach(t => $("fType").add(new Option(t, t)));
+  D.dims.states.forEach(s => $("fState").add(new Option(s, s)));
+  D.dims.cats.forEach(c => $("fCat").add(new Option(c, c)));
+  D.dims.channels.forEach(c => $("fChan").add(new Option(c, c)));
+  D.dims.statuses.forEach(s => $("fStatus").add(new Option(s, s)));
+  ["fM0","fM1","fType","fState","fCat","fChan","fStatus","fFraud"].forEach(id => $(id).addEventListener("change", onFilter));
+  $("clearBtn").addEventListener("click", () => { filters = { m0: 0, m1: M.length - 1, type: "", state: "", cat: "", chan: "", status: "", fraud: "" };
+    $("fM0").value = 0; $("fM1").value = M.length - 1; ["fType","fState","fCat","fChan","fStatus","fFraud"].forEach(id => $(id).value = ""); render(); });
+})();
+function onFilter(e) {
+  filters.m0 = +$("fM0").value; filters.m1 = +$("fM1").value;
+  if (filters.m1 < filters.m0) { const t = filters.m1; filters.m1 = filters.m0; filters.m0 = t; $("fM0").value = filters.m0; $("fM1").value = filters.m1; }
+  filters.type = $("fType").value; filters.state = $("fState").value; filters.cat = $("fCat").value;
+  filters.chan = $("fChan").value; filters.status = $("fStatus").value; filters.fraud = $("fFraud").value;
+  render();
+}
+$("mtVol").addEventListener("click", () => { metric = "volume"; $("mtVol").classList.add("on"); $("mtCount").classList.remove("on"); render(); });
+$("mtCount").addEventListener("click", () => { metric = "count"; $("mtCount").classList.add("on"); $("mtVol").classList.remove("on"); render(); });
+$("themeBtn").addEventListener("click", () => {
+  const dark = !isDark();
+  document.body.classList.toggle("dark", dark);
+  $("themeBtn").textContent = dark ? "\u2600\ufe0f Light" : "\ud83c\udf19 Dark";
+  try { localStorage.setItem("dashTheme", dark ? "dark" : "light"); } catch (e) {}
+  render();          // re-draw all filter-driven charts with theme colors
+  window.renderKyc(); // static chart isn't re-rendered by render()
+});
+document.querySelectorAll(".tab").forEach(a => a.addEventListener("click", () => { document.querySelectorAll(".tab").forEach(x => x.classList.remove("active")); a.classList.add("active"); }));
+
+/* ---------- static sections ---------- */
+(function initStatic() {
+  const q = D.quality;
+  const checks = [
+    ["Total rows", fmtNum(q.rows), q.rows > 500000 ? "ok" : "mid"],
+    ["Exact duplicate rows", q.dup_rows, q.dup_rows === 0 ? "ok" : "warn-b"],
+    ["Duplicate transaction IDs", q.dup_txn_ids, q.txn_ids_unique ? "ok" : "warn-b"],
+    ["Zero/negative amounts", q.zero_neg_amounts, q.zero_neg_amounts === 0 ? "ok" : "warn-b"],
+    ["Invalid credit scores (&lt;300 or &gt;900)", q.invalid_cs, q.invalid_cs === 0 ? "ok" : "warn-b"],
+    ["Invalid has_loan flags", q.invalid_has_loan, q.invalid_has_loan === 0 ? "ok" : "warn-b"],
+    ["Invalid is_fraud flags", q.invalid_is_fraud, q.invalid_is_fraud === 0 ? "ok" : "warn-b"],
+    ["Invalid transaction hours", q.invalid_hours, q.invalid_hours === 0 ? "ok" : "warn-b"],
+    ["Unparseable dates", q.invalid_dates, q.invalid_dates === 0 ? "ok" : "warn-b"],
+    ["Invalid status values", q.invalid_status, q.invalid_status === 0 ? "ok" : "warn-b"],
+    ["has_loan=1 with missing loan_type", q.loan_without_type, q.loan_without_type === 0 ? "ok" : "mid"],
+    ["has_loan=0 with loan_type", q.loan_type_no_loan, q.loan_type_no_loan === 0 ? "ok" : "mid"]
+  ];
+  $("qChecks").innerHTML = checks.map(r => `<tr><td>${r[0]}</td><td style="text-align:right"><b>${r[1]}</b></td><td style="text-align:right"><span class="btn-mini ${r[2]}">${r[2] === "ok" ? "pass" : r[2] === "mid" ? "note" : "fail"}</span></td></tr>`).join("");
+  const miss = Object.entries(q.missing).map(([k2, v]) => [k2, v, v / q.rows * 100]);
+  $("qMissing").innerHTML = miss.map(r => `<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td><td style="text-align:right">${r[2] === 0 ? "0%" : r[2].toFixed(2) + "%"}</td></tr>`).join("");
+
+  const renderKyc = () => mk("cKyc", { type: "doughnut",
+    data: { labels: Object.keys(q.kyc_mix), datasets: [{ data: Object.values(q.kyc_mix), backgroundColor: ["#059669", "#d97706", "#dc2626"], borderWidth: 1, borderColor: chartBorder() }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "bottom", labels: { font: { size: 10 } } } } } });
+  renderKyc();
+  window.renderKyc = renderKyc;
+
+  const rows = D.topCustomers.map((c, i) =>
+    `<tr><td>${i + 1}</td><td><b>${c.customer_id}</b></td><td>${c.state}</td>
+     <td style="text-align:right">${fmtNum(c.count)}</td><td style="text-align:right">${fmtN(c.volume)}</td>
+     <td style="text-align:right">${c.share}%
+       <div class="bar-track"><div class="bar-fill" style="width:${Math.min(c.share * 20, 100)}%"></div></div></td>
+     <td style="text-align:right">${c.credit_score}</td><td>${c.has_loan ? c.loan_type || "yes" : "\u2014"}</td>
+     <td>${c.fraud ? '<span class="btn-mini warn-b">flagged</span>' : '<span class="btn-mini ok">clean</span>'}</td></tr>`);
+  $("tbCustomers").innerHTML = rows.join("");
+
+  $("bPrecision").textContent = "550,000 rows \u00b7 20 columns";
+  $("bCustomers").textContent = "79,916 customers";
+  $("bTypes").textContent = D.dims.types.length + " payment types";
+  $("bStates").textContent = D.dims.states.length + " states";
+})();
+render();
+</script>
+</body>
+</html>
