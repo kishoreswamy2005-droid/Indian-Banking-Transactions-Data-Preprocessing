@@ -10,3 +10,6 @@ __pycache__/
 
 # Scratch
 *.tmp
+
+# raw recording (regenerable)
+video/raw/
